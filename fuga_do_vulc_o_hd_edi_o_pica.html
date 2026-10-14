@@ -1,0 +1,1327 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fuga do Vulcão HD - Edição Épica</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            font-family: 'Courier New', Courier, monospace;
+            background-color: #05020a;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* GAME CONTAINER & EXTREME SCREEN SHAKE ANIMATIONS */
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+            max-width: 480px;
+            max-height: 820px;
+            overflow: hidden;
+            border: 4px solid #1a0826;
+            box-shadow: 0 0 35px rgba(255, 69, 0, 0.5);
+            background: #000;
+        }
+
+        /* CONTINUOUS ASTEROID TREMOR */
+        .shake-rumble {
+            animation: continuousRumble 0.1s infinite alternate ease-in-out !important;
+        }
+
+        @keyframes continuousRumble {
+            0% { transform: translate(5px, 3px) rotate(0.8deg); }
+            25% { transform: translate(-6px, -4px) rotate(-1deg); }
+            50% { transform: translate(-4px, 5px) rotate(0.5deg); }
+            75% { transform: translate(6px, -3px) rotate(-0.8deg); }
+            100% { transform: translate(-5px, -5px) rotate(1deg); }
+        }
+
+        /* HEAVY IMPACT EXPLOSION SHAKE */
+        .shake-impact {
+            animation: heavyImpact 0.45s cubic-bezier(.36,.07,.19,.97) both !important;
+        }
+
+        @keyframes heavyImpact {
+            0% { transform: translate(0, 0) scale(1); }
+            10% { transform: translate(-14px, 12px) rotate(-2.5deg) scale(1.02); }
+            20% { transform: translate(16px, -14px) rotate(2deg) scale(0.98); }
+            30% { transform: translate(-18px, 15px) rotate(-2deg); }
+            40% { transform: translate(15px, -12px) rotate(1.5deg); }
+            50% { transform: translate(-10px, 10px) rotate(-1deg); }
+            60% { transform: translate(8px, -8px) rotate(0.8deg); }
+            70% { transform: translate(-5px, 5px) rotate(-0.5deg); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
+
+        #game-container:fullscreen {
+            max-width: none;
+            max-height: none;
+            border: none;
+        }
+
+        /* CANVAS BACKGROUND */
+        #bg-canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            z-index: 1;
+        }
+
+        /* OVERLAY SCREENS */
+        .overlay-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(12, 5, 20, 0.94);
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            text-align: center;
+        }
+
+        .game-title {
+            font-size: 2.1rem;
+            color: #ffaa00;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 3px 3px 0px #800000, 0 0 18px #ff4500;
+            margin-bottom: 6px;
+        }
+
+        .subtitle {
+            color: #ffaa88;
+            font-size: 0.9rem;
+            margin-bottom: 18px;
+        }
+
+        .difficulty-selector {
+            display: flex;
+            gap: 6px;
+            margin-bottom: 18px;
+            width: 100%;
+            justify-content: center;
+        }
+
+        .diff-btn {
+            background: #2a153d;
+            border: 2px solid #55287a;
+            color: #ccc;
+            padding: 8px 10px;
+            font-family: inherit;
+            font-weight: bold;
+            font-size: 0.8rem;
+            cursor: pointer;
+            border-radius: 4px;
+        }
+
+        .diff-btn.active {
+            background: #ff4500;
+            border-color: #ffff00;
+            color: #fff;
+            box-shadow: 0 0 10px #ff4500;
+        }
+
+        .btn {
+            background: #ff4500;
+            color: white;
+            border: 4px solid #000;
+            padding: 12px 24px;
+            font-size: 1rem;
+            font-weight: bold;
+            font-family: inherit;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            box-shadow: 4px 4px 0px #800000;
+            transition: transform 0.1s;
+            margin-bottom: 10px;
+            width: 80%;
+            max-width: 260px;
+        }
+
+        .btn-success {
+            background: #00cc44;
+            box-shadow: 4px 4px 0px #005511;
+        }
+
+        .btn-secondary {
+            background: #4a2165;
+            box-shadow: 4px 4px 0px #210d30;
+            color: #e0d0f0;
+        }
+
+        .btn:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: 6px 6px 0px #000;
+        }
+
+        .highscore-tag {
+            margin-top: 14px;
+            color: #ffcc00;
+            font-size: 0.85rem;
+            background: rgba(0,0,0,0.5);
+            padding: 6px 12px;
+            border-radius: 12px;
+            border: 1px solid #ffcc00;
+        }
+
+        /* HUD & STAGE PROGRESS */
+        #hud {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 20;
+            font-weight: bold;
+            background: rgba(10, 5, 20, 0.88);
+            padding: 8px 12px;
+            border: 2px solid #ff4500;
+            box-shadow: 0 0 10px rgba(0,0,0,0.8);
+            font-size: 0.8rem;
+        }
+
+        .hud-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hud-icon-btn {
+            background: #ff4500;
+            border: 1px solid #000;
+            color: #fff;
+            padding: 4px 6px;
+            font-size: 0.75rem;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+        }
+
+        #stage-bar-container {
+            position: absolute;
+            top: 48px;
+            left: 10px;
+            right: 10px;
+            height: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            border: 1px solid #ffaa00;
+            border-radius: 5px;
+            z-index: 20;
+            overflow: hidden;
+        }
+
+        #stage-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #ffaa00, #00ff66);
+            transition: width 0.3s;
+        }
+
+        #combo-box {
+            position: absolute;
+            top: 64px;
+            right: 10px;
+            z-index: 20;
+            font-size: 1rem;
+            font-weight: bold;
+            color: #ffff00;
+            text-shadow: 2px 2px 0 #000;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        #warning-banner {
+            position: absolute;
+            top: 64px;
+            left: 10px;
+            z-index: 21;
+            font-size: 0.95rem;
+            font-weight: 900;
+            color: #ffffff;
+            background: rgba(220, 0, 0, 0.9);
+            padding: 6px 12px;
+            border: 2px solid #ffff00;
+            border-radius: 6px;
+            display: none;
+            box-shadow: 0 0 15px #ff0000;
+            animation: pulseWarning 0.15s infinite alternate;
+        }
+
+        @keyframes pulseWarning {
+            from { transform: scale(0.94); opacity: 0.85; }
+            to { transform: scale(1.06); opacity: 1; }
+        }
+
+        /* MATH QUIZ CARD */
+        #quiz-area {
+            position: absolute;
+            top: 90px;
+            width: 100%;
+            text-align: center;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        #question-card {
+            display: inline-block;
+            background: rgba(15, 8, 25, 0.94);
+            border: 3px solid #ffaa00;
+            padding: 8px 16px;
+            border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.8);
+            pointer-events: auto;
+        }
+
+        #question {
+            font-size: 1.9rem;
+            font-weight: 800;
+            text-shadow: 2px 2px 0px #000, 0 0 10px #ff4500;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+
+        .options {
+            display: flex;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .option-btn {
+            background: #1f0f33;
+            color: #fff;
+            border: 2px solid #ff4500;
+            padding: 6px 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            font-family: inherit;
+            cursor: pointer;
+            min-width: 70px;
+            box-shadow: 3px 3px 0px #000;
+            transition: transform 0.1s, background 0.1s;
+        }
+
+        .option-btn:hover {
+            background: #ff4500;
+            transform: translate(-2px, -2px);
+        }
+
+        /* WORLD & PLATFORMS */
+        #world {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.25s steps(12, end);
+            z-index: 3;
+        }
+
+        .rock {
+            position: absolute;
+            width: 96px;
+            height: 24px;
+            background: #333344;
+            border: 3px solid #000;
+            box-shadow: 
+                inset -4px -4px 0 0 #1a1a24,
+                inset 4px 4px 0 0 #555566,
+                0 4px 8px rgba(0,0,0,0.7);
+            z-index: 4;
+        }
+
+        .rock.finish-flag {
+            background: #228833;
+            border-color: #aaffaa;
+            box-shadow: 0 0 12px #00ff66;
+        }
+
+        /* GIANT 90px ASTEROID ON FIRE */
+        .fireball-container {
+            position: absolute;
+            width: 100px;
+            height: 100px;
+            z-index: 7;
+            pointer-events: none;
+            transform: translate(-50%, -50%);
+        }
+
+        /* Outer Flame Aura protruding out */
+        .fireball-aura {
+            position: absolute;
+            top: -12px;
+            left: -12px;
+            width: 124px;
+            height: 124px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 230, 0, 0.9) 10%, rgba(255, 69, 0, 0.8) 45%, rgba(200, 0, 0, 0.5) 70%, rgba(0,0,0,0) 90%);
+            animation: pulseAura 0.08s infinite alternate;
+        }
+
+        @keyframes pulseAura {
+            0% { transform: scale(0.92); opacity: 0.85; }
+            100% { transform: scale(1.12); opacity: 1; }
+        }
+
+        /* Massive Flaming Tail */
+        .fireball-flame-tail {
+            position: absolute;
+            top: -65px;
+            left: 18px;
+            width: 64px;
+            height: 85px;
+            background: linear-gradient(to top, rgba(255, 215, 0, 1), rgba(255, 69, 0, 0.95), rgba(180, 0, 0, 0.8), rgba(0, 0, 0, 0));
+            clip-path: polygon(50% 0%, 80% 25%, 100% 100%, 0% 100%, 20% 25%);
+            animation: flickerTail 0.08s infinite alternate;
+        }
+
+        @keyframes flickerTail {
+            0% { transform: scaleY(1) scaleX(0.88); }
+            100% { transform: scaleY(1.35) scaleX(1.15); }
+        }
+
+        /* Heavy 90px Rock Core */
+        .fireball-core {
+            position: absolute;
+            top: 5px;
+            left: 5px;
+            width: 90px;
+            height: 90px;
+            border-radius: 38%;
+            background: radial-gradient(circle at 35% 35%, #ffffff 0%, #ffff00 20%, #ff4500 50%, #4a1500 82%, #1a0500 100%);
+            border: 4px solid #100200;
+            box-shadow: 0 0 30px #ff3300, inset 0 0 18px #ffffaa;
+            animation: rotateRock 1.8s linear infinite;
+        }
+
+        @keyframes rotateRock {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Jagged Volcanic Cracks Texture */
+        .fireball-core::before {
+            content: '';
+            position: absolute;
+            top: 10px;
+            left: 12px;
+            width: 60px;
+            height: 60px;
+            border-right: 4px solid #3d0000;
+            border-bottom: 4px solid #ff1100;
+            border-top: 2px solid #ffcc00;
+            transform: rotate(35deg);
+        }
+
+        /* Dynamic Flame Spikes coming off the asteroid sides */
+        .flame-spike {
+            position: absolute;
+            width: 24px;
+            height: 36px;
+            background: linear-gradient(to top, #ffeb3b, #ff5722);
+            clip-path: polygon(50% 0%, 100% 100%, 0% 100%);
+            animation: spikeFlicker 0.1s infinite alternate;
+        }
+
+        @keyframes spikeFlicker {
+            0% { transform: scale(0.8) rotate(-10deg); }
+            100% { transform: scale(1.3) rotate(10deg); }
+        }
+
+        /* Flame Particles */
+        .fire-particle {
+            position: absolute;
+            background: #ffaa00;
+            border-radius: 50%;
+            pointer-events: none;
+            animation: floatFlame 0.4s ease-out forwards;
+        }
+
+        @keyframes floatFlame {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: translateY(-40px) scale(2.5); opacity: 0; }
+        }
+
+        /* LAVA LAYER */
+        #lava {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 0px;
+            background: linear-gradient(to top, #220000 0%, #880000 40%, #ff3300 80%, #ffff00 100%);
+            border-top: 5px solid #ffffff;
+            box-shadow: 0 -10px 30px #ff3300;
+            transition: height 0.1s linear;
+            z-index: 10;
+        }
+
+        /* PLAYER CHARACTER */
+        #player {
+            position: absolute;
+            width: 32px;
+            height: 52px;
+            z-index: 8;
+            transition: all 0.2s steps(4, end);
+        }
+
+        .pixel-hero {
+            position: relative;
+            width: 100%;
+            height: 100%;
+        }
+
+        .hero-hair {
+            position: absolute;
+            top: 0;
+            left: 4px;
+            width: 24px;
+            height: 10px;
+            background: #5a2a00;
+            border: 2px solid #000;
+        }
+
+        .hero-head {
+            position: absolute;
+            top: 8px;
+            left: 6px;
+            width: 20px;
+            height: 14px;
+            background: #ffccaa;
+            border: 2px solid #000;
+        }
+
+        .hero-eye {
+            position: absolute;
+            top: 3px;
+            right: 3px;
+            width: 4px;
+            height: 4px;
+            background: #000;
+        }
+
+        .hero-torso {
+            position: absolute;
+            top: 20px;
+            left: 4px;
+            width: 24px;
+            height: 16px;
+            background: #0088cc;
+            border: 2px solid #000;
+        }
+
+        .hero-belt {
+            position: absolute;
+            top: 34px;
+            left: 4px;
+            width: 24px;
+            height: 4px;
+            background: #ffaa00;
+            border: 1px solid #000;
+        }
+
+        .hero-legs {
+            position: absolute;
+            top: 37px;
+            left: 6px;
+            width: 20px;
+            height: 10px;
+            background: #222244;
+            border: 2px solid #000;
+        }
+
+        .hero-boots {
+            position: absolute;
+            top: 45px;
+            left: 4px;
+            width: 24px;
+            height: 7px;
+            background: #442200;
+            border: 2px solid #000;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- CANVAS BACKGROUND ENGINE -->
+        <canvas id="bg-canvas" width="240" height="400"></canvas>
+
+        <!-- MENU INICIAL -->
+        <div id="menu-screen" class="overlay-screen">
+            <h1 class="game-title">Fuga do Vulcão</h1>
+            <p class="subtitle">Desafio da Montanha Flamejante</p>
+
+            <p style="margin-bottom: 10px; font-size: 0.85rem; color: #ddd;">Escolha a Dificuldade:</p>
+            <div class="difficulty-selector">
+                <button class="diff-btn active" onclick="setDifficulty('easy', this)">Fácil</button>
+                <button class="diff-btn" onclick="setDifficulty('medium', this)">Médio</button>
+                <button class="diff-btn" onclick="setDifficulty('hard', this)">Difícil</button>
+                <button class="diff-btn" onclick="setDifficulty('insane', this)">Insano</button>
+            </div>
+
+            <button class="btn" id="start-btn">COMEÇAR AVENTURA</button>
+
+            <div class="highscore-tag">
+                🏆 Recorde: <span id="menu-highscore">0</span> pts
+            </div>
+        </div>
+
+        <!-- HUD -->
+        <div id="hud">
+            <div class="hud-group">
+                <span style="color:#00ff66;" id="stage-display">FASE 1</span>
+                <span>PTS: <span id="score" style="color: #ffcc00;">0</span></span>
+            </div>
+            <div class="hud-group">
+                <span id="op-mode" style="color:#aaffaa;">Fácil</span>
+                <button class="hud-icon-btn" id="music-btn" onclick="toggleMusic()">🎵 ON</button>
+                <button class="hud-icon-btn" onclick="toggleFullScreen()">⛶</button>
+            </div>
+        </div>
+
+        <!-- STAGE PROGRESS BAR -->
+        <div id="stage-bar-container">
+            <div id="stage-bar-fill"></div>
+        </div>
+
+        <!-- COMBOS & WARNINGS -->
+        <div id="combo-box">COMBO x<span id="combo-count">1</span>!</div>
+        <div id="warning-banner">🔥 METEORO GIGANTE EM QUEDA! 🔥</div>
+
+        <!-- QUIZ CARD -->
+        <div id="quiz-area">
+            <div id="question-card">
+                <div id="question">2 + 2 = ?</div>
+                <div class="options" id="options"></div>
+            </div>
+        </div>
+
+        <!-- WORLD CAMERA -->
+        <div id="world">
+            <div id="rock-path"></div>
+            <div id="fireballs-layer"></div>
+
+            <!-- PLAYER -->
+            <div id="player">
+                <div class="pixel-hero">
+                    <div class="hero-hair"></div>
+                    <div class="hero-head">
+                        <div class="hero-eye"></div>
+                    </div>
+                    <div class="hero-torso"></div>
+                    <div class="hero-belt"></div>
+                    <div class="hero-legs"></div>
+                    <div class="hero-boots"></div>
+                </div>
+            </div>
+
+            <!-- LAVA -->
+            <div id="lava"></div>
+        </div>
+
+        <!-- STAGE WIN OVERLAY -->
+        <div id="stage-win" class="overlay-screen" style="display: none;">
+            <h2 style="color: #00ff66; font-size: 2.2rem; text-shadow: 2px 2px #000; margin-bottom: 8px;">FASE CONCLUÍDA!</h2>
+            <p style="color: #ffcc00; font-size: 1.1rem; margin-bottom: 12px;">Você escapou da erupção nesta fase!</p>
+            <p style="font-size: 1.1rem; margin-bottom: 20px;">Pontuação Total: <strong id="win-score" style="color: #ffcc00;">0</strong></p>
+
+            <button class="btn btn-success" onclick="nextStage()">PRÓXIMA FASE ➔</button>
+            <button class="btn btn-secondary" onclick="quitToMainMenu()">SAIR PARA O MENU</button>
+        </div>
+
+        <!-- GAME OVER OVERLAY -->
+        <div id="game-over" class="overlay-screen" style="display: none;">
+            <h2 style="color: #ff3300; font-size: 2rem; text-shadow: 2px 2px #000; margin-bottom: 10px;">A LAVA TE PEGOU!</h2>
+            <p style="color: #ccc; margin-bottom: 10px;">A erupção engoliu o herói.</p>
+            <p style="font-size: 1.1rem; color: #aaffaa; margin-bottom: 5px;">Alcançou: <span id="gameover-stage">Fase 1</span></p>
+            <p style="font-size: 1.2rem; margin-bottom: 5px;">Pontuação: <strong id="final-score" style="color: #ffcc00;">0</strong></p>
+            <p style="font-size: 0.85rem; color: #aaa; margin-bottom: 20px;">Recorde Atual: <span id="gameover-highscore">0</span></p>
+
+            <button class="btn" onclick="restartGame()">JOGAR NOVAMENTE</button>
+            <button class="btn btn-secondary" onclick="quitToMainMenu()">SAIR PARA O MENU</button>
+        </div>
+    </div>
+
+    <script>
+        let audioCtx = null;
+        let isMusicPlaying = false;
+        let musicMuted = false;
+        let musicTimer = null;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+        }
+
+        function playTone(freq, type, duration, vol = 0.1) {
+            if (!audioCtx || musicMuted) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(e){}
+        }
+
+        function playJumpSound() {
+            if (!audioCtx) return;
+            playTone(180, 'square', 0.08, 0.15);
+            setTimeout(() => playTone(360, 'square', 0.12, 0.15), 50);
+        }
+
+        function playRumbleSound() {
+            if (!audioCtx || musicMuted) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(80, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(20, audioCtx.currentTime + 0.6);
+                gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.6);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.6);
+            } catch(e){}
+        }
+
+        function playStageWinSound() {
+            if (!audioCtx) return;
+            [300, 400, 500, 700].forEach((n, i) => {
+                setTimeout(() => playTone(n, 'triangle', 0.1, 0.2), i * 60);
+            });
+        }
+
+        function playWrongSound() {
+            if (!audioCtx) return;
+            playTone(220, 'sawtooth', 0.15, 0.25);
+            setTimeout(() => playTone(140, 'sawtooth', 0.25, 0.25), 100);
+        }
+
+        function playHitSound() {
+            if (!audioCtx) return;
+            playTone(240, 'sawtooth', 0.1, 0.35);
+            setTimeout(() => playTone(120, 'sawtooth', 0.2, 0.35), 60);
+            setTimeout(() => playTone(70, 'sawtooth', 0.3, 0.35), 120);
+        }
+
+        function playLavaSound() {
+            if (!audioCtx) return;
+            playTone(120, 'sawtooth', 0.3, 0.3);
+            setTimeout(() => playTone(60, 'sawtooth', 0.5, 0.3), 150);
+        }
+
+        const musicMelody = [
+            261.63, 329.63, 392.00, 523.25, 392.00, 329.63, 261.63, 196.00,
+            220.00, 261.63, 329.63, 440.00, 329.63, 261.63, 220.00, 164.81,
+            174.61, 220.00, 261.63, 349.23, 261.63, 220.00, 174.61, 130.81,
+            196.00, 246.94, 293.66, 392.00, 293.66, 246.94, 196.00, 146.83
+        ];
+        let musicStep = 0;
+
+        function startMusicLoop() {
+            if (isMusicPlaying) return;
+            isMusicPlaying = true;
+            musicStep = 0;
+
+            musicTimer = setInterval(() => {
+                if (musicMuted || !audioCtx) return;
+                const note = musicMelody[musicStep % musicMelody.length];
+                if (musicStep % 4 === 0) {
+                    playTone(note / 2, 'sawtooth', 0.2, 0.08);
+                }
+                playTone(note, 'square', 0.12, 0.05);
+                musicStep++;
+            }, 160);
+        }
+
+        function toggleMusic() {
+            musicMuted = !musicMuted;
+            document.getElementById('music-btn').textContent = musicMuted ? '🔇 OFF' : '🎵 ON';
+        }
+
+        const canvas = document.getElementById('bg-canvas');
+        const ctx = canvas.getContext('2d');
+        ctx.imageSmoothingEnabled = false;
+
+        let particles = [];
+        for(let i = 0; i < 45; i++) {
+            particles.push({
+                x: Math.random() * 240,
+                y: Math.random() * 400,
+                speedY: 0.2 + Math.random() * 0.6,
+                speedX: (Math.random() - 0.5) * 0.5,
+                size: Math.random() > 0.7 ? 2 : 1,
+                type: Math.random() > 0.4 ? 'ember' : 'ash',
+                life: Math.random() * 100
+            });
+        }
+
+        function drawOrganicTree(x, y, scale = 1, darkColor = '#143818', lightColor = '#35823f') {
+            const trunkW = Math.max(2, Math.floor(3 * scale));
+            const trunkH = Math.floor(12 * scale);
+            ctx.fillStyle = '#3a2211';
+            ctx.fillRect(x, y - trunkH, trunkW, trunkH);
+            ctx.fillRect(x + 1, y - trunkH - 2, trunkW - 1, 3);
+
+            const folW = Math.floor(16 * scale);
+            const folH = Math.floor(14 * scale);
+
+            ctx.fillStyle = darkColor;
+            ctx.fillRect(x - folW/2, y - trunkH - folH/2, folW, folH/2);
+            ctx.fillRect(x - folW/2 + 2, y - trunkH - folH + 2, folW - 3, folH/2);
+
+            ctx.fillStyle = lightColor;
+            ctx.fillRect(x - folW/3, y - trunkH - folH, folW/1.5, folH/2.5);
+            ctx.fillRect(x - folW/2 + 1, y - trunkH - folH/1.5, folW/2, folH/3);
+        }
+
+        function renderPixelBackground() {
+            const skyGrad = ctx.createLinearGradient(0, 0, 0, 400);
+            skyGrad.addColorStop(0.00, '#0d2b5c');
+            skyGrad.addColorStop(0.25, '#1e4b8a');
+            skyGrad.addColorStop(0.50, '#5e386b');
+            skyGrad.addColorStop(0.70, '#9e2e28');
+            skyGrad.addColorStop(0.88, '#d64d18');
+            skyGrad.addColorStop(1.00, '#e67300');
+
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, 240, 400);
+
+            ctx.fillStyle = '#ffaa00';
+            ctx.fillRect(180, 24, 26, 26);
+            ctx.fillStyle = '#ffffaa';
+            ctx.fillRect(184, 28, 18, 18);
+
+            ctx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+            ctx.fillRect(10, 28, 56, 10);
+            ctx.fillRect(20, 22, 36, 6);
+            ctx.fillRect(120, 48, 48, 8);
+
+            ctx.fillStyle = '#221e36';
+            ctx.beginPath();
+            ctx.moveTo(0, 400);
+            ctx.lineTo(0, 240);
+            ctx.lineTo(50, 210);
+            ctx.lineTo(110, 250);
+            ctx.lineTo(175, 195);
+            ctx.lineTo(240, 235);
+            ctx.lineTo(240, 400);
+            ctx.fill();
+
+            ctx.fillStyle = '#2b1b28';
+            ctx.beginPath();
+            ctx.moveTo(125, 110);
+            ctx.lineTo(155, 115);
+            ctx.lineTo(180, 180);
+            ctx.lineTo(200, 250);
+            ctx.lineTo(240, 350);
+            ctx.lineTo(240, 400);
+            ctx.lineTo(125, 400);
+            ctx.fill();
+
+            ctx.fillStyle = '#443147';
+            ctx.beginPath();
+            ctx.moveTo(0, 400);
+            ctx.lineTo(15, 360);
+            ctx.lineTo(35, 330);
+            ctx.lineTo(70, 240);
+            ctx.lineTo(95, 205);
+            ctx.lineTo(125, 110);
+            ctx.lineTo(125, 400);
+            ctx.fill();
+
+            ctx.fillStyle = '#990000';
+            ctx.fillRect(130, 118, 7, 45);
+            ctx.fillRect(144, 165, 6, 85);
+            ctx.fillRect(128, 250, 7, 120);
+
+            ctx.fillStyle = '#ff4500';
+            ctx.fillRect(131, 118, 4, 40);
+            ctx.fillRect(145, 165, 3, 82);
+            ctx.fillRect(129, 250, 4, 115);
+
+            ctx.fillStyle = '#0a0204';
+            ctx.fillRect(124, 110, 32, 8);
+            ctx.fillStyle = '#ff2200';
+            ctx.fillRect(127, 112, 26, 5);
+
+            particles.forEach(p => {
+                p.y -= p.speedY;
+                p.x += p.speedX;
+                p.life -= 0.5;
+
+                ctx.fillStyle = p.type === 'ember' ? (Math.random() > 0.3 ? '#ff6600' : '#ffff00') : '#a192a3';
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+
+                if (p.y < 0 || p.life <= 0) {
+                    p.y = 110 + Math.random() * 280;
+                    p.x = 120 + (Math.random() * 60 - 30);
+                    p.life = 100;
+                }
+            });
+
+            drawOrganicTree(12, 350, 1.2, '#123315', '#2a692e');
+            drawOrganicTree(32, 365, 1.6, '#18421b', '#35823d');
+            drawOrganicTree(175, 345, 1.3, '#123315', '#2a692e');
+
+            requestAnimationFrame(renderPixelBackground);
+        }
+
+        renderPixelBackground();
+
+        let difficulty = 'easy';
+        let currentStage = 1;
+        let totalStageSteps = 12;
+        let score = 0;
+        let highscore = localStorage.getItem('vulc_highscore') || 0;
+        let lavaHeight = 0;
+        let lavaInterval = null;
+        let fireballInterval = null;
+        let speedMultiplier = 1.0;
+        let playerStep = 0;
+        let combo = 0;
+
+        let currentAnswer = 0;
+        let rockPositions = [];
+        let activeFireballs = [];
+
+        const STEP_HEIGHT = 88;
+        const ROCK_WIDTH = 96;
+
+        const gameContainer = document.getElementById('game-container');
+        const menuScreen = document.getElementById('menu-screen');
+        const gameOverScreen = document.getElementById('game-over');
+        const stageWinScreen = document.getElementById('stage-win');
+        const world = document.getElementById('world');
+        const rockPath = document.getElementById('rock-path');
+        const fireballsLayer = document.getElementById('fireballs-layer');
+        const player = document.getElementById('player');
+        const lava = document.getElementById('lava');
+        const questionEl = document.getElementById('question');
+        const optionsEl = document.getElementById('options');
+        const scoreEl = document.getElementById('score');
+        const comboEl = document.getElementById('combo-count');
+        const comboBox = document.getElementById('combo-box');
+        const warningBanner = document.getElementById('warning-banner');
+        const opModeEl = document.getElementById('op-mode');
+        const stageDisplayEl = document.getElementById('stage-display');
+        const stageBarFill = document.getElementById('stage-bar-fill');
+
+        document.getElementById('menu-highscore').textContent = highscore;
+
+        // HIGH INTENSITY SCREEN SHAKE CONTROLLERS
+        function startContinuousRumble() {
+            playRumbleSound();
+            gameContainer.classList.remove('shake-impact');
+            gameContainer.classList.add('shake-rumble');
+        }
+
+        function stopContinuousRumble() {
+            gameContainer.classList.remove('shake-rumble');
+        }
+
+        function triggerImpactShake() {
+            playRumbleSound();
+            gameContainer.classList.remove('shake-rumble');
+            gameContainer.classList.remove('shake-impact');
+            void gameContainer.offsetWidth; // Force Reflow
+            gameContainer.classList.add('shake-impact');
+            setTimeout(() => {
+                gameContainer.classList.remove('shake-impact');
+            }, 450);
+        }
+
+        function setDifficulty(diff, btn) {
+            difficulty = diff;
+            document.querySelectorAll('.diff-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+
+            const diffNames = { easy: 'Fácil', medium: 'Médio', hard: 'Difícil', insane: 'Insano' };
+            opModeEl.textContent = diffNames[diff];
+        }
+
+        function toggleFullScreen() {
+            if (!document.fullscreenElement) {
+                gameContainer.requestFullscreen().catch(() => {});
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        document.getElementById('start-btn').addEventListener('click', () => {
+            initAudio();
+            startMusicLoop();
+            menuScreen.style.display = 'none';
+            currentStage = 1;
+            score = 0;
+            startStage();
+        });
+
+        function startStage() {
+            lavaHeight = 0;
+            playerStep = 0;
+            combo = 0;
+
+            totalStageSteps = 10 + (currentStage * 4);
+
+            scoreEl.textContent = score;
+            stageDisplayEl.textContent = `FASE ${currentStage}`;
+            stageBarFill.style.width = '0%';
+
+            gameOverScreen.style.display = 'none';
+            stageWinScreen.style.display = 'none';
+            warningBanner.style.display = 'none';
+            stopContinuousRumble();
+
+            rockPath.innerHTML = '';
+            fireballsLayer.innerHTML = '';
+            rockPositions = [];
+            activeFireballs = [];
+
+            const speedMap = { easy: 1.0, medium: 1.5, hard: 2.2, insane: 3.0 };
+            speedMultiplier = speedMap[difficulty] + ((currentStage - 1) * 0.35);
+
+            for (let i = 0; i <= totalStageSteps; i++) {
+                addRockStep(i);
+            }
+
+            updatePlayerAndCamera();
+            lava.style.height = lavaHeight + 'px';
+
+            generateQuestion();
+
+            clearInterval(lavaInterval);
+            clearInterval(fireballInterval);
+
+            lavaInterval = setInterval(gameLoopStep, 100);
+
+            // Asteroids spawn with warning and continuous earthquake rumble
+            const fireballSpawnTime = Math.max(8000, 12000 - (currentStage * 1000));
+            fireballInterval = setInterval(spawnFireballWithWarning, fireballSpawnTime);
+        }
+
+        function gameLoopStep() {
+            lavaHeight += 1.4 * speedMultiplier;
+            lava.style.height = lavaHeight + 'px';
+
+            const playerY = rockPositions[playerStep].bottom;
+            if (lavaHeight >= playerY) {
+                endGame();
+            }
+
+            updateFireballs();
+        }
+
+        function spawnFireballWithWarning() {
+            if (playerStep >= totalStageSteps) return;
+
+            warningBanner.style.display = 'block';
+            startContinuousRumble();
+
+            setTimeout(() => {
+                warningBanner.style.display = 'none';
+                if (playerStep < totalStageSteps) {
+                    spawnFireball();
+                } else {
+                    stopContinuousRumble();
+                }
+            }, 1400);
+        }
+
+        function spawnFireball() {
+            const targetPos = rockPositions[playerStep];
+            const fb = {
+                id: 'fb-' + Date.now() + Math.random(),
+                x: targetPos.leftOffset,
+                y: targetPos.bottom + 460,
+                targetY: targetPos.bottom,
+                speed: 6.0 + (currentStage * 1.5)
+            };
+
+            const el = document.createElement('div');
+            el.className = 'fireball-container';
+            el.id = fb.id;
+            el.innerHTML = `
+                <div class="fireball-aura"></div>
+                <div class="fireball-flame-tail"></div>
+                <div class="flame-spike" style="top: -15px; left: 10px;"></div>
+                <div class="flame-spike" style="top: -15px; right: 10px;"></div>
+                <div class="fireball-core"></div>
+            `;
+            el.style.left = `calc(50% + ${fb.x}px)`;
+            el.style.bottom = fb.y + 'px';
+            fireballsLayer.appendChild(el);
+
+            activeFireballs.push(fb);
+        }
+
+        function updateFireballs() {
+            const playerPos = rockPositions[playerStep];
+
+            for (let i = activeFireballs.length - 1; i >= 0; i--) {
+                const fb = activeFireballs[i];
+                fb.y -= fb.speed;
+
+                const el = document.getElementById(fb.id);
+                if (el) {
+                    el.style.bottom = fb.y + 'px';
+
+                    // Continuous fire particle trail
+                    if (Math.random() < 0.8) {
+                        const flame = document.createElement('div');
+                        flame.className = 'fire-particle';
+                        flame.style.width = (10 + Math.random() * 12) + 'px';
+                        flame.style.height = flame.style.width;
+                        flame.style.left = `calc(50% + ${fb.x + (Math.random()*30 - 15)}px)`;
+                        flame.style.bottom = (fb.y + 20) + 'px';
+                        fireballsLayer.appendChild(flame);
+                        setTimeout(() => flame.remove(), 400);
+                    }
+                }
+
+                // Check Impact on Player (Radius adjusted for 90px size)
+                if (fb.y <= playerPos.bottom + 40 && fb.y >= playerPos.bottom - 30) {
+                    if (Math.abs(fb.x - playerPos.leftOffset) < 65) {
+                        // MASSIVE ASTEROID IMPACT
+                        stopContinuousRumble();
+                        playHitSound();
+                        triggerImpactShake();
+
+                        if (el) el.remove();
+                        activeFireballs.splice(i, 1);
+
+                        // KNOCK DOWN 3 PLATFORM STEPS
+                        playerStep = Math.max(0, playerStep - 3);
+                        updatePlayerAndCamera();
+
+                        lavaHeight += 20;
+                        continue;
+                    }
+                }
+
+                // Remove when reaching lava and trigger impact shake
+                if (fb.y < lavaHeight) {
+                    stopContinuousRumble();
+                    triggerImpactShake();
+                    if (el) el.remove();
+                    activeFireballs.splice(i, 1);
+                }
+            }
+        }
+
+        function addRockStep(index) {
+            const bottom = 120 + (index * STEP_HEIGHT);
+            let leftOffset;
+
+            if (index === 0) {
+                leftOffset = 0;
+            } else {
+                const dir = index % 2 === 0 ? 1 : -1;
+                leftOffset = dir * (60 + Math.floor(Math.random() * 50));
+            }
+
+            rockPositions.push({
+                bottom,
+                leftOffset
+            });
+
+            const rock = document.createElement('div');
+            rock.className = `rock ${index === totalStageSteps ? 'finish-flag' : ''}`;
+            rock.id = `rock-${index}`;
+            rock.style.bottom = bottom + 'px';
+            rock.style.left = `calc(50% + ${leftOffset - (ROCK_WIDTH / 2)}px)`;
+
+            if (index === totalStageSteps) {
+                rock.innerHTML = '<span style="font-size: 14px; position: absolute; top: -22px; left: 36px;">🏁 TOP</span>';
+            }
+
+            rockPath.appendChild(rock);
+        }
+
+        function generateQuestion() {
+            let num1, num2, operator;
+            const ops = ['+', '-'];
+
+            if (difficulty === 'medium' || currentStage >= 2) ops.push('*');
+            if (difficulty === 'hard' || difficulty === 'insane' || currentStage >= 3) ops.push('/');
+
+            operator = ops[Math.floor(Math.random() * ops.length)];
+            const maxNum = difficulty === 'insane' ? 35 : (difficulty === 'hard' ? 20 : 12);
+
+            if (operator === '+') {
+                num1 = Math.floor(Math.random() * maxNum) + 1;
+                num2 = Math.floor(Math.random() * maxNum) + 1;
+                currentAnswer = num1 + num2;
+            } else if (operator === '-') {
+                num1 = Math.floor(Math.random() * maxNum) + 8;
+                num2 = Math.floor(Math.random() * num1) + 1;
+                currentAnswer = num1 - num2;
+            } else if (operator === '*') {
+                num1 = Math.floor(Math.random() * 8) + 2;
+                num2 = Math.floor(Math.random() * 8) + 2;
+                currentAnswer = num1 * num2;
+            } else if (operator === '/') {
+                num2 = Math.floor(Math.random() * 6) + 2;
+                currentAnswer = Math.floor(Math.random() * 8) + 2;
+                num1 = num2 * currentAnswer;
+            }
+
+            const displayOp = operator === '*' ? '×' : (operator === '/' ? '÷' : operator);
+            questionEl.textContent = `${num1} ${displayOp} ${num2} = ?`;
+            optionsEl.innerHTML = '';
+
+            let choices = [currentAnswer];
+            while (choices.length < 3) {
+                let offset = (Math.floor(Math.random() * 5) + 1) * (Math.random() > 0.5 ? 1 : -1);
+                let wrong = currentAnswer + offset;
+                if (wrong >= 0 && !choices.includes(wrong)) {
+                    choices.push(wrong);
+                }
+            }
+            choices.sort(() => Math.random() - 0.5);
+
+            choices.forEach(choice => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = choice;
+                btn.onclick = () => checkAnswer(choice);
+                optionsEl.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selected) {
+            if (selected === currentAnswer) {
+                playJumpSound();
+
+                combo++;
+                if (combo > 1) {
+                    comboBox.style.opacity = '1';
+                    comboEl.textContent = combo;
+                }
+
+                score += 10 * combo;
+                scoreEl.textContent = score;
+
+                playerStep = Math.min(totalStageSteps, playerStep + 1);
+
+                const pct = Math.floor((playerStep / totalStageSteps) * 100);
+                stageBarFill.style.width = pct + '%';
+
+                updatePlayerAndCamera();
+
+                if (playerStep >= totalStageSteps) {
+                    winStage();
+                } else {
+                    lavaHeight = Math.max(0, lavaHeight - 12);
+                    generateQuestion();
+                }
+            } else {
+                playWrongSound();
+                combo = 0;
+                comboBox.style.opacity = '0';
+                lavaHeight += 30;
+                lava.style.height = lavaHeight + 'px';
+            }
+        }
+
+        function updatePlayerAndCamera() {
+            const pos = rockPositions[playerStep];
+            player.style.bottom = (pos.bottom + 12) + 'px';
+            player.style.left = `calc(50% + ${pos.leftOffset - 16}px)`;
+
+            const cameraY = Math.max(0, pos.bottom - 220);
+            world.style.transform = `translateY(${cameraY}px)`;
+        }
+
+        function winStage() {
+            clearInterval(lavaInterval);
+            clearInterval(fireballInterval);
+            stopContinuousRumble();
+            playStageWinSound();
+
+            score += 100 * currentStage;
+            scoreEl.textContent = score;
+
+            document.getElementById('win-score').textContent = score;
+            stageWinScreen.style.display = 'flex';
+        }
+
+        function nextStage() {
+            currentStage++;
+            startStage();
+        }
+
+        function endGame() {
+            playLavaSound();
+            clearInterval(lavaInterval);
+            clearInterval(fireballInterval);
+            stopContinuousRumble();
+
+            if (score > highscore) {
+                highscore = score;
+                localStorage.setItem('vulc_highscore', highscore);
+            }
+
+            document.getElementById('gameover-stage').textContent = `Fase ${currentStage}`;
+            document.getElementById('final-score').textContent = score;
+            document.getElementById('gameover-highscore').textContent = highscore;
+            document.getElementById('menu-highscore').textContent = highscore;
+
+            gameOverScreen.style.display = 'flex';
+        }
+
+        function restartGame() {
+            currentStage = 1;
+            score = 0;
+            startStage();
+        }
+
+        function quitToMainMenu() {
+            clearInterval(lavaInterval);
+            clearInterval(fireballInterval);
+            stopContinuousRumble();
+            gameOverScreen.style.display = 'none';
+            stageWinScreen.style.display = 'none';
+            menuScreen.style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
